@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Setter
@@ -32,9 +33,12 @@ public class CheckIn {
 
     private LocalDateTime createdAt;
 
+    private LocalDate date;
+
     @PrePersist
     public void onCreate() {
         this.createdAt = LocalDateTime.now();
+        this.date = LocalDate.now();
     }
 
 }

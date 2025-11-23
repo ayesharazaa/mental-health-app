@@ -5,6 +5,9 @@ import com.example.demo.model.User;
 import com.example.demo.repository.CheckInRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
@@ -13,7 +16,6 @@ import java.util.Random;
 public class CheckInService {
 
     private final CheckInRepository checkInRepository;
-    private final Random random = new Random();
 
     // Predefined reflection questions
     private final List<String> questions = Arrays.asList(
@@ -46,18 +48,42 @@ public class CheckInService {
         return checkInRepository.findById(id).orElse(null);
     }
 
-    public String[] generateRandomQuestions() {
-        String[] selected = new String[3];
-        List<String> availableQuestions = List.copyOf(questions);
+    public List<CheckIn> getRecentCheckIns(User user) {
+        LocalDateTime threeDaysAgo = LocalDateTime.now().minusDays(3);
+        return checkInRepository.findRecentCheckIns(user.getId(), threeDaysAgo);
+    }
 
-        for (int i = 0; i < 3; i++) {
-            int index = random.nextInt(availableQuestions.size());
-            selected[i] = availableQuestions.get(index);
-        }
-        return selected;
+    public boolean hasCompletedToday(User user, LocalDate date) {
+        List<CheckIn> checkIns = checkInRepository.findByUserAndDate(user, date);
+        System.out.println("Checking for user: " + user.getUsername() + " on date: " + date);
+        System.out.println("Found check-ins: " + checkIns.size());
+        return !checkIns.isEmpty();
+    }
+
+    public String[] generateRandomQuestions() {
+        List<String> shuffled = new java.util.ArrayList<>(questions);
+        java.util.Collections.shuffle(shuffled);
+
+        return new String[] {
+                shuffled.get(0),
+                shuffled.get(1),
+                shuffled.get(2)
+        };
     }
 
     public void deleteCheckIn(Long id) {
         checkInRepository.deleteById(id);
+    }
+
+    public void addQuestion(String question) {
+        questions.add(question);
+    }
+
+    public void removeQuestion(String question) {
+        questions.remove(question);
+    }
+
+    public List<String> getAllQuestions() {
+        return questions;
     }
 }

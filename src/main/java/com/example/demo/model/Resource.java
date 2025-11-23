@@ -5,11 +5,13 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+
 @Getter
 @Setter
 @Entity
-@Table(name="resource")
+@Table(name = "resource")
 public class Resource {
+
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -19,13 +21,14 @@ public class Resource {
 
     @Column(columnDefinition = "TEXT")
     private String description;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "category_id")
+    private ResourceCategory category;
+    private String link;
 
-    private String url;
+    private String fileUrl;
 
-    private String tag; // e.g., depression, stress, meditation
-
-    private boolean addedByAdmin;
-    private LocalDateTime createdAt; // NEW
+    private LocalDateTime createdAt;
 
     @PrePersist
     public void onCreate() {
@@ -33,13 +36,11 @@ public class Resource {
     }
     public Resource() {}
 
-    public Resource(String title, String description, String url, String tag, boolean addedByAdmin) {
+    public Resource(String title, String description, ResourceCategory category, String link, String fileUrl) {
         this.title = title;
         this.description = description;
-        this.url = url;
-        this.tag = tag;
-        this.addedByAdmin = addedByAdmin;
+        this.category = category;
+        this.link = link;
+        this.fileUrl = fileUrl;
     }
-
-
 }
