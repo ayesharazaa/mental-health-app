@@ -29,7 +29,7 @@ public class JournalService {
         return journalRepository.findAll();
     }
 
-    public Journal getJournalById(Long id) {
+    public Journal getJournalById(long id) {
         return journalRepository.findById(id).orElse(null);
     }
 
@@ -62,7 +62,7 @@ public class JournalService {
         return journalRepository.save(journal);
     }
 
-    public void deleteJournal(Long id) {
+    public void deleteJournal(long id) {
         journalRepository.deleteById(id);
     }
 }
