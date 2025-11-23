@@ -64,6 +64,14 @@
             margin-bottom: 2rem;
         }
 
+        .card.hidden {
+            display: none;
+        }
+
+        .hidden {
+            display: none;
+        }
+
         h2 {
             margin-top: 0;
             color: var(--primary);
@@ -102,6 +110,7 @@
             font-weight: 600;
             cursor: pointer;
             transition: background-color 0.2s;
+            width: 100%;
         }
 
         button:hover {
@@ -140,77 +149,129 @@
         .answer {
             color: var(--text);
         }
+
+        .empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 2rem;
+        }
+
+        .completed-badge {
+            background: linear-gradient(135deg, #10b981, #059669);
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            display: inline-block;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
     </style>
 </head>
 
 <body>
-    <nav class="navbar">
-        <div class="logo">MindTrack</div>
-        <div class="nav-links">
-            <a href="/dashboard">Dashboard</a>
-            <a href="/mood">Mood</a>
-            <a href="/journal">Journal</a>
-            <a href="/goals">Goals</a>
-            <a href="/habits">Habits</a>
-            <a href="/stress">Stress</a>
-            <a href="/checkin">Check-In</a>
-            <a href="#" onclick="logout()">Logout</a>
-        </div>
-    </nav>
+<nav class="navbar">
+    <div class="logo">MindTrack</div>
+    <div class="nav-links">
+        <a href="/dashboard">Dashboard</a>
+        <a href="/mood">Mood</a>
+        <a href="/journal">Journal</a>
+        <a href="/goals">Goals</a>
+        <a href="/habits">Habits</a>
+        <a href="/stress">Stress</a>
+        <a href="/checkin">Check-In</a>
+        <a href="#" onclick="logout()">Logout</a>
+    </div>
+</nav>
 
-    <div class="container">
-        <div class="card">
-            <h2>Daily Reflection</h2>
-            <form id="checkinForm">
-                <div id="questionsContainer">
-                    <!-- Questions will be loaded here -->
-                </div>
-                <button type="submit">Save Check-In</button>
-            </form>
+<div class="container">
+    <!-- Form Card - Only shows if not completed today -->
+    <div class="card hidden" id="formCard">
+        <h2>Daily Reflection</h2>
+        <div id="questionsContainer">
+            <!-- Questions will be loaded here -->
         </div>
-
-        <div class="card">
-            <h2>Past Check-Ins</h2>
-            <ul id="checkinList" class="checkin-list">
-                <!-- Check-ins will be loaded here -->
-            </ul>
-        </div>
+        <button onclick="saveCheckIn()">Save Check-In</button>
     </div>
 
-    <script>
-        function logout() {
-            document.cookie = "JWT=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-            window.location.href = '/login';
-        }
+    <!-- Completed Badge - Only shows if completed today -->
+    <div id="completedBadge" class="hidden">
+        <span class="completed-badge">✓ You've completed today's check-in!</span>
+    </div>
 
-        async function loadQuestions() {
-            try {
-                const response = await fetch('/api/checkins/questions');
-                if (response.ok) {
-                    const data = await response.json();
-                    const container = document.getElementById('questionsContainer');
-                    container.innerHTML = data.questions.map((q, index) => `
-                        <div class="form-group">
-                            <label>${q}</label>
-                            <textarea name="answer${index + 1}" required></textarea>
-                            <input type="hidden" name="question${index + 1}" value="${q}">
-                        </div>
-                    `).join('');
-                }
-            } catch (error) {
-                console.error('Error loading questions:', error);
+    <!-- Past Check-Ins Card - Always shows -->
+    <div class="card">
+        <h2>Past Check-Ins</h2>
+        <ul id="checkinList" class="checkin-list">
+            <!-- Check-ins will be loaded here -->
+        </ul>
+    </div>
+</div>
+
+<script>
+    let currentQuestions = [];
+
+    function logout() {
+        document.cookie = "JWT=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        window.location.href = '/login';
+    }
+
+    async function checkTodayStatus() {
+        try {
+            const response = await fetch('/api/checkins/today/status');
+            const data = await response.json();
+
+            if (data.completed) {
+                // Hide form, show completed badge
+                document.getElementById('formCard').classList.add('hidden');
+                document.getElementById('completedBadge').classList.remove('hidden');
+            } else {
+                // Show form, hide completed badge
+                document.getElementById('formCard').classList.remove('hidden');
+                document.getElementById('completedBadge').classList.add('hidden');
+                await loadQuestions();
             }
+        } catch (error) {
+            console.error('Error checking status:', error);
         }
+    }
 
-        async function loadCheckIns() {
-            try {
-                const response = await fetch('/api/checkins');
-                if (response.ok) {
-                    const checkIns = await response.json();
-                    const list = document.getElementById('checkinList');
-                    list.innerHTML = checkIns.map(checkIn => `
+    async function loadQuestions() {
+        try {
+            const response = await fetch('/api/checkins/questions');
+            const data = await response.json();
+            currentQuestions = data.questions;
+
+            const container = document.getElementById('questionsContainer');
+            container.innerHTML = data.questions.map((q, index) => `
+                    <div class="form-group">
+                        <label>${q}</label>
+                        <textarea id="answer${index}" required></textarea>
+                    </div>
+                `).join('');
+        } catch (error) {
+            console.error('Error loading questions:', error);
+        }
+    }
+
+    function formatDate(dateString) {
+        const d = new Date(dateString);
+        return `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth()+1).padStart(2, '0')}-${d.getFullYear()}`;
+    }
+
+    async function loadCheckIns() {
+        try {
+            const response = await fetch('/api/checkins/recent');
+            if (response.ok) {
+                const checkIns = await response.json();
+                const list = document.getElementById('checkinList');
+
+                if (checkIns.length === 0) {
+                    list.innerHTML = '<div class="empty-state">No past check-ins yet</div>';
+                    return;
+                }
+
+                list.innerHTML = checkIns.map(checkIn => `
                         <li class="checkin-item">
-                            <span class="checkin-date">${checkIn.date}</span>
+                            <span class="checkin-date">${formatDate(checkIn.createdAt)}</span>
                             <div class="qa-pair">
                                 <div class="question">${checkIn.question1}</div>
                                 <div class="answer">${checkIn.answer1}</div>
@@ -225,48 +286,72 @@
                             </div>
                         </li>
                     `).join('');
-                }
-            } catch (error) {
-                console.error('Error loading check-ins:', error);
             }
+        } catch (error) {
+            console.error('Error loading check-ins:', error);
+        }
+    }
+
+    async function saveCheckIn() {
+        // Get answers
+        const answer1 = document.getElementById('answer0').value.trim();
+        const answer2 = document.getElementById('answer1').value.trim();
+        const answer3 = document.getElementById('answer2').value.trim();
+
+        if (!answer1 || !answer2 || !answer3) {
+            alert('Please answer all questions');
+            return;
         }
 
-        document.getElementById('checkinForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData(e.target);
+        const checkIn = {
+            date: new Date().toISOString().split('T')[0],
+            question1: currentQuestions[0],
+            answer1: answer1,
+            question2: currentQuestions[1],
+            answer2: answer2,
+            question3: currentQuestions[2],
+            answer3: answer3
+        };
 
-            const checkIn = {
-                date: new Date().toISOString().split('T')[0],
-                question1: formData.get('question1'),
-                answer1: formData.get('answer1'),
-                question2: formData.get('question2'),
-                answer2: formData.get('answer2'),
-                question3: formData.get('question3'),
-                answer3: formData.get('answer3')
-            };
+        try {
+            const response = await fetch('/api/checkins', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(checkIn)
+            });
 
-            try {
-                const response = await fetch('/api/checkins', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(checkIn)
-                });
+            if (response.ok) {
+                // Clear any dismissal flags from dashboard
+                localStorage.removeItem('checkinDismissed');
+                localStorage.removeItem('checkinDismissedDate');
 
-                if (response.ok) {
-                    loadCheckIns();
-                    loadQuestions(); // Refresh questions for next time (optional)
-                    e.target.reset();
-                }
-            } catch (error) {
-                console.error('Error saving check-in:', error);
+                alert('Check-in saved! ✓');
+
+                // Reload the page to show updated state
+                await checkTodayStatus();
+                await loadCheckIns();
+
+                // Clear form
+                document.getElementById('answer0').value = '';
+                document.getElementById('answer1').value = '';
+                document.getElementById('answer2').value = '';
+            } else {
+                alert('Failed to save check-in');
             }
-        });
+        } catch (error) {
+            console.error('Error saving check-in:', error);
+            alert('An error occurred');
+        }
+    }
 
-        loadQuestions();
-        loadCheckIns();
-    </script>
+    // Initialize page
+    window.addEventListener('load', async () => {
+        await checkTodayStatus();
+        await loadCheckIns();
+    });
+</script>
 </body>
 
 </html>

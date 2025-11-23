@@ -6,8 +6,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <link rel="stylesheet" href="/css/admin-dashboard.css">
-
     <style>
         :root {
             --primary: #6366f1;
@@ -27,6 +25,28 @@
             color: var(--text);
         }
 
+        .navbar {
+            background-color: var(--surface);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(to right, #818cf8, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            margin-left: 1.5rem;
+        }
+
         .container {
             padding: 2rem;
             max-width: 1200px;
@@ -38,10 +58,6 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 2rem;
-        }
-
-        .header h2 {
-            color: var(--primary);
         }
 
         .card {
@@ -70,15 +86,8 @@
             font-weight: 600;
         }
 
-        .badge-success {
-            background-color: rgba(16,185,129,0.2);
-            color: var(--success);
-        }
-
-        .badge-danger {
-            background-color: rgba(239,68,68,0.2);
-            color: var(--danger);
-        }
+        .badge-success { background-color: rgba(16,185,129,0.2); color: var(--success); }
+        .badge-danger { background-color: rgba(239,68,68,0.2); color: var(--danger); }
 
         .actions {
             display: flex;
@@ -102,8 +111,14 @@
 
 <body>
 
-<!-- Navbar fragment -->
-<div th:insert="admin/navbar :: navbar"></div>
+<nav class="navbar">
+    <div class="logo">MindTrack Admin</div>
+    <div class="nav-links">
+        <a href="/admin/dashboard">Dashboard</a>
+        <a href="/admin/users">Users</a>
+        <a href="#" onclick="logout()">Logout</a>
+    </div>
+</nav>
 
 <div class="container">
 
@@ -137,54 +152,35 @@
     }
 
     async function loadUsers() {
-        try {
-            const res = await fetch("/api/admin/users", {
-                headers: { "Authorization": "Bearer " + getJwt() }
-            });
+        const res = await fetch("/api/admin/users", {
+            headers: { "Authorization": "Bearer " + getJwt() }
+        });
 
-            if (!res.ok) {
-                console.error("Auth failed");
-                return;
-            }
+        const users = await res.json();
+        const tbody = document.getElementById("usersTable");
 
-            const users = await res.json();
-            const tbody = document.getElementById("usersTable");
-
-            tbody.innerHTML = users.map(u => `
-                <tr>
-                    <td>${u.id}</td>
-                    <td>${u.username}</td>
-                    <td>${u.email}</td>
-
-                    <td>${Array.isArray(u.roles) ? u.roles.join(", ") : "USER"}</td>
-
-                    <td>
-                        <span class="badge ${u.blocked ? 'badge-danger' : 'badge-success'}">
-                            ${u.blocked ? "Blocked" : "Active"}
-                        </span>
-                    </td>
-
-                    <td class="actions">
-                        <button class="btn-warning"
-                            onclick="toggleBlock(${u.id}, ${!u.blocked})">
-                            ${u.blocked ? "Unblock" : "Block"}
-                        </button>
-
-                        <button class="btn-danger" onclick="deleteUser(${u.id})">
-                            Delete
-                        </button>
-                    </td>
-                </tr>
-            `).join("");
-
-        } catch (err) {
-            console.error("Error loading users:", err);
-        }
+        tbody.innerHTML = users.map(u => `
+            <tr>
+                <td>${u.id}</td>
+                <td>${u.username}</td>
+                <td>${u.email}</td>
+                <td>${u.roles?.join(", ")}</td>
+                <td>
+                    <span class="badge ${u.blocked ? 'badge-danger' : 'badge-success'}">
+                        ${u.blocked ? "Blocked" : "Active"}
+                    </span>
+                </td>
+                <td class="actions">
+                    <button class="btn-warning" onclick="toggleBlock(${u.id}, ${!u.blocked})">
+                        ${u.blocked ? "Unblock" : "Block"}
+                    </button>
+                    <button class="btn-danger" onclick="deleteUser(${u.id})">Delete</button>
+                </td>
+            </tr>
+        `).join("");
     }
 
     async function toggleBlock(id, blocked) {
-        if (!confirm(`Are you sure you want to ${blocked ? "block" : "unblock"} this user?`)) return;
-
         await fetch(`/api/admin/users/${id}/block`, {
             method: "PATCH",
             headers: {
@@ -193,23 +189,24 @@
             },
             body: JSON.stringify({ blocked })
         });
-
         loadUsers();
     }
 
     async function deleteUser(id) {
-        if (!confirm("Delete this user permanently?")) return;
-
         await fetch(`/api/admin/users/${id}`, {
             method: "DELETE",
             headers: { "Authorization": "Bearer " + getJwt() }
         });
-
         loadUsers();
     }
 
     function exportUsers() {
         window.location.href = "/api/admin/export/users";
+    }
+
+    function logout() {
+        document.cookie = "JWT=; expires=Thu, 01 Jan 1970; path=/;";
+        window.location.href = '/login';
     }
 
     loadUsers();

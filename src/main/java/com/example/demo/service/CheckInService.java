@@ -5,6 +5,9 @@ import com.example.demo.model.User;
 import com.example.demo.repository.CheckInRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
@@ -13,10 +16,9 @@ import java.util.Random;
 public class CheckInService {
 
     private final CheckInRepository checkInRepository;
-    private final Random random = new Random();
 
-    // Predefined reflection questions - Mutable for Admin configuration
-    private final List<String> questions = new java.util.ArrayList<>(Arrays.asList(
+    // Predefined reflection questions
+    private final List<String> questions = Arrays.asList(
             "How are you feeling today?",
             "What's one thing you're grateful for?",
             "What challenged you today?",
@@ -26,7 +28,8 @@ public class CheckInService {
             "How well did you take care of yourself today?",
             "What's on your mind right now?",
             "What do you need more of in your life?",
-            "What's one thing you're looking forward to?"));
+            "What's one thing you're looking forward to?"
+    );
 
     @Autowired
     public CheckInService(CheckInRepository checkInRepository) {
@@ -45,15 +48,27 @@ public class CheckInService {
         return checkInRepository.findById(id).orElse(null);
     }
 
-    public String[] generateRandomQuestions() {
-        String[] selected = new String[3];
-        List<String> availableQuestions = List.copyOf(questions);
+    public List<CheckIn> getRecentCheckIns(User user) {
+        LocalDateTime threeDaysAgo = LocalDateTime.now().minusDays(3);
+        return checkInRepository.findRecentCheckIns(user.getId(), threeDaysAgo);
+    }
 
-        for (int i = 0; i < 3; i++) {
-            int index = random.nextInt(availableQuestions.size());
-            selected[i] = availableQuestions.get(index);
-        }
-        return selected;
+    public boolean hasCompletedToday(User user, LocalDate date) {
+        List<CheckIn> checkIns = checkInRepository.findByUserAndDate(user, date);
+        System.out.println("Checking for user: " + user.getUsername() + " on date: " + date);
+        System.out.println("Found check-ins: " + checkIns.size());
+        return !checkIns.isEmpty();
+    }
+
+    public String[] generateRandomQuestions() {
+        List<String> shuffled = new java.util.ArrayList<>(questions);
+        java.util.Collections.shuffle(shuffled);
+
+        return new String[] {
+                shuffled.get(0),
+                shuffled.get(1),
+                shuffled.get(2)
+        };
     }
 
     public void deleteCheckIn(Long id) {

@@ -1,6 +1,9 @@
 package com.example.demo.controller;
 
+import com.example.demo.dto.ResourceRequest;
 import com.example.demo.model.Resource;
+import com.example.demo.model.ResourceCategory;
+import com.example.demo.service.ResourceCategoryService;
 import com.example.demo.service.ResourceService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -18,19 +21,28 @@ import java.util.List;
 public class ResourceController {
 
     private final ResourceService resourceService;
+    private final ResourceCategoryService categoryService;
 
     @Value("${file.upload-dir:uploads/}")
     private String uploadDir;
 
-    public ResourceController(ResourceService resourceService) {
+    public ResourceController(ResourceService resourceService, ResourceCategoryService categoryService) {
         this.resourceService = resourceService;
+        this.categoryService = categoryService;
     }
 
-    // CREATE (Admin only)
+    // CREATE (Admin only) - accepts ResourceRequest
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
-    public Resource create(@RequestBody Resource resource) {
-        return resourceService.createResource(resource);
+    public Resource create(@RequestBody ResourceRequest req) {
+        return resourceService.createResource(req);
+    }
+
+    // Create category (Admin only)
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/categories")
+    public ResourceCategory createCategory(@RequestBody ResourceCategory payload) {
+        return categoryService.getOrCreate(payload.getName());
     }
 
     // READ ALL (Public)
@@ -48,8 +60,8 @@ public class ResourceController {
     // UPDATE (Admin only)
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
-    public Resource update(@PathVariable Long id, @RequestBody Resource resource) {
-        return resourceService.updateResource(id, resource);
+    public Resource update(@PathVariable Long id, @RequestBody ResourceRequest req) {
+        return resourceService.updateResource(id, req);
     }
 
     // DELETE (Admin only)
@@ -86,7 +98,7 @@ public class ResourceController {
         Path filePath = uploadPath.resolve(filename);
         Files.copy(file.getInputStream(), filePath);
 
-        // Return the file path
+        // Return the file path (relative)
         return uploadDir + filename;
     }
 
@@ -94,40 +106,62 @@ public class ResourceController {
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/load-defaults")
     public List<Resource> loadDefaults() {
+        // create default categories via categoryService.getOrCreate
+        ResourceCategory med = categoryService.getOrCreate("Meditation");
+        ResourceCategory stress = categoryService.getOrCreate("Stress Management");
+        ResourceCategory dep = categoryService.getOrCreate("Depression Support");
+        ResourceCategory mind = categoryService.getOrCreate("Mindfulness");
+        ResourceCategory anx = categoryService.getOrCreate("Anxiety Relief");
+
         List<Resource> defaultResources = List.of(
                 new Resource(
                         "Meditation Guide",
                         "Comprehensive guide to meditation techniques for beginners and advanced practitioners. Learn mindfulness meditation, breathing exercises, and body scan techniques.",
-                        "Meditation",
+                        med,
                         "https://www.mindful.org/meditation/mindfulness-getting-started/",
                         null),
                 new Resource(
                         "Stress Management Toolkit",
                         "Evidence-based strategies for managing stress in daily life. Includes practical exercises, coping mechanisms, and relaxation techniques.",
-                        "Stress Management",
+                        stress,
                         "https://www.apa.org/topics/stress/tips",
                         null),
                 new Resource(
                         "Understanding Depression",
                         "Educational resource about depression, its symptoms, causes, and treatment options. Includes information about therapy and medication.",
-                        "Depression Support",
+                        dep,
                         "https://www.nimh.nih.gov/health/topics/depression",
                         null),
                 new Resource(
                         "Mindfulness Exercises",
                         "Daily mindfulness practices for mental wellness. Simple exercises you can do anywhere to reduce anxiety and improve focus.",
-                        "Mindfulness",
+                        mind,
                         "https://www.headspace.com/mindfulness",
                         null),
                 new Resource(
                         "Anxiety Coping Strategies",
                         "Practical techniques for managing anxiety and panic attacks. Learn grounding exercises, cognitive strategies, and breathing techniques.",
-                        "Anxiety Relief",
+                        anx,
                         "https://www.anxietycanada.com/resources/",
                         null));
 
         return defaultResources.stream()
                 .map(resourceService::createResource)
                 .toList();
+    }
+
+    // CATEGORIES endpoint (Public) - list of category names
+    @GetMapping("/categories")
+    public List<String> categories() {
+        // prefer fetching category table names
+        return categoryService.getAll().stream().map(ResourceCategory::getName).toList();
+    }
+
+    // Delete category by name (Admin)
+    @PreAuthorize("hasRole('ADMIN')")
+    @DeleteMapping("/categories/{name}")
+    public void deleteCategory(@PathVariable String name) {
+        // NOTE: In production you'd want to reassign or prevent deletion if resources exist.
+        categoryService.deleteByName(name);
     }
 }

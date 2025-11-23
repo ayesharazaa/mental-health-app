@@ -198,7 +198,10 @@
 
     <div class="header">
         <h2>Manage Resources</h2>
-        <button class="btn-warning" onclick="loadDefaults()">Load Default Resources</button>
+        <div>
+            <button class="btn-warning" onclick="loadDefaults()">Load Default Resources</button>
+            <button class="btn-success" onclick="openCategoryManager()" style="margin-left:8px;">Manage Categories</button>
+        </div>
     </div>
 
     <!-- ADD / EDIT FORM -->
@@ -216,13 +219,8 @@
 
                 <div class="form-group">
                     <label>Category</label>
-                    <select id="category" required>
-                        <option value="Meditation">Meditation</option>
-                        <option value="Stress Management">Stress Management</option>
-                        <option value="Depression Support">Depression Support</option>
-                        <option value="Mindfulness">Mindfulness</option>
-                        <option value="Anxiety Relief">Anxiety Relief</option>
-                        <option value="General Wellness">General Wellness</option>
+                    <select id="categorySelect" required>
+                        <option value="">Loading...</option>
                     </select>
                 </div>
 
@@ -256,25 +254,86 @@
 
 </div>
 
+<!-- Simple Category Manager modal (minimal) -->
+<div id="categoryModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); align-items:center; justify-content:center;">
+    <div style="background:var(--surface); padding:1.5rem; border-radius:8px; width:420px; border:1px solid rgba(255,255,255,0.06);">
+        <h3 style="color:var(--primary); margin-top:0;">Manage Categories</h3>
+        <div style="margin-bottom:0.75rem;">
+            <input id="newCategoryName" placeholder="New category name" style="width:100%; padding:0.5rem; border-radius:6px; border:1px solid rgba(255,255,255,0.06); background:rgba(0,0,0,0.06); color:var(--text);">
+        </div>
+        <div style="display:flex; gap:8px; justify-content:flex-end;">
+            <button class="btn-primary" onclick="addCategory()">Add</button>
+            <button onclick="closeCategoryModal()" style="background:transparent; border:1px solid var(--text-muted); color:var(--text-muted);">Close</button>
+        </div>
+        <div style="margin-top:1rem;">
+            <div id="categoryListInModal"></div>
+        </div>
+    </div>
+</div>
+
 <script>
     function logout() {
         document.cookie = "JWT=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
         window.location.href = '/login';
     }
 
+    async function loadCategories() {
+        const res = await fetch('/api/resources/categories');
+        const cats = await res.json();
+        const select = document.getElementById('categorySelect');
+        select.innerHTML = '<option value="">Select category</option>' + cats.map(c => `<option value="${c}">${c}</option>`).join('');
+        // also populate modal list
+        const modalList = document.getElementById('categoryListInModal');
+        modalList.innerHTML = cats.map(c => `<div style="display:flex; justify-content:space-between; padding:6px 0;"><span style="color:var(--text)">${c}</span><button style="background:transparent; border:none; color:var(--danger); cursor:pointer;" onclick="deleteCategory('${c}')">Delete</button></div>`).join('');
+    }
+
+    async function openCategoryManager() {
+        document.getElementById('categoryModal').style.display = 'flex';
+        await loadCategories();
+    }
+
+    function closeCategoryModal() {
+        document.getElementById('categoryModal').style.display = 'none';
+    }
+
+    async function addCategory() {
+        const name = document.getElementById('newCategoryName').value.trim();
+        if (!name) return alert('Enter a category name');
+        // create by posting a resource category creation endpoint (we'll reuse categories endpoint that we add below).
+        // For simplicity, we'll hit POST /api/resources/categories
+        const res = await fetch('/api/resources/categories', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name })
+        });
+        if (res.ok) {
+            document.getElementById('newCategoryName').value = '';
+            await loadCategories();
+        } else {
+            alert('Could not add category');
+        }
+    }
+
+    async function deleteCategory(name) {
+        if (!confirm('Delete category "' + name + '"? Resources in this category will not be deleted but may become uncategorized.')) return;
+        const res = await fetch(`/api/resources/categories/${encodeURIComponent(name)}`, { method: 'DELETE' });
+        if (res.ok) loadCategories();
+        else alert('Failed to delete category');
+    }
+
+    // Resources
     async function loadResources() {
-        const response = await fetch('/api/resources');
-        const resources = await response.json();
+        const res = await fetch('/api/resources');
+        const resources = await res.json();
         const list = document.getElementById('resourceList');
 
         list.innerHTML = resources
-            .map(
-                r => `
+            .map(r => `
             <div class="resource-item">
                 <div class="resource-info">
                     <h4>${r.title}
                         <span style="font-size:0.75rem; background:rgba(99,102,241,0.2); color:#818cf8; padding:0.1rem 0.4rem; border-radius:4px; margin-left:0.5rem;">
-                            ${r.category}
+                            ${r.category ? r.category.name : 'General'}
                         </span>
                     </h4>
 
@@ -289,21 +348,18 @@
                     <button class="btn-danger" onclick="deleteResource(${r.id})">Delete</button>
                 </div>
             </div>
-        `
-            )
-            .join('');
+        `).join('');
     }
 
     async function loadDefaults() {
         if (!confirm("Load default resources? This may create duplicates.")) return;
-
         await fetch('/api/resources/load-defaults', { method: 'POST' });
         loadResources();
+        loadCategories();
     }
 
     async function deleteResource(id) {
         if (!confirm("Delete this resource?")) return;
-
         await fetch(`/api/resources/${id}`, { method: 'DELETE' });
         loadResources();
     }
@@ -312,67 +368,61 @@
         document.getElementById('formTitle').textContent = 'Edit Resource';
         document.getElementById('resourceId').value = r.id;
         document.getElementById('title').value = r.title;
-        document.getElementById('category').value = r.category;
-        document.getElementById('description').value =
-            r.description || '';
+        document.getElementById('categorySelect').value = r.category ? r.category.name : '';
+        document.getElementById('description').value = r.description || '';
         document.getElementById('link').value = r.link || '';
-
         window.scrollTo(0, 0);
     }
 
     function resetForm() {
         document.getElementById('resourceForm').reset();
         document.getElementById('resourceId').value = '';
-        document.getElementById('formTitle').textContent =
-            'Add New Resource';
+        document.getElementById('formTitle').textContent = 'Add New Resource';
     }
 
-    document
-        .getElementById('resourceForm')
-        .addEventListener('submit', async e => {
-            e.preventDefault();
+    document.getElementById('resourceForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
 
-            const id = document.getElementById('resourceId').value;
-            const fileInput = document.getElementById('file');
-            let fileUrl = null;
+        const id = document.getElementById('resourceId').value;
+        const fileInput = document.getElementById('file');
+        let fileUrl = null;
 
-            if (fileInput.files.length > 0) {
-                const formData = new FormData();
-                formData.append('file', fileInput.files[0]);
+        if (fileInput.files.length > 0) {
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
 
-                const res = await fetch('/api/resources/upload', {
-                    method: 'POST',
-                    body: formData,
-                });
-
-                if (res.ok) fileUrl = await res.text();
-            }
-
-            const data = {
-                title: document.getElementById('title').value,
-                category: document.getElementById('category').value,
-                description: document.getElementById('description').value,
-                link: document.getElementById('link').value,
-                fileUrl: fileUrl,
-            };
-
-            const method = id ? 'PUT' : 'POST';
-            const url = id
-                ? `/api/resources/${id}`
-                : '/api/resources';
-
-            await fetch(url, {
-                method,
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(data),
+            const res = await fetch('/api/resources/upload', {
+                method: 'POST',
+                body: formData,
             });
 
-            resetForm();
-            loadResources();
+            if (res.ok) fileUrl = await res.text();
+        }
+
+        const payload = {
+            title: document.getElementById('title').value,
+            description: document.getElementById('description').value,
+            category: document.getElementById('categorySelect').value,
+            link: document.getElementById('link').value,
+            fileUrl
+        };
+
+        const method = id ? 'PUT' : 'POST';
+        const url = id ? `/api/resources/${id}` : '/api/resources';
+
+        await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
         });
 
+        resetForm();
+        loadResources();
+        loadCategories();
+    });
+
+    // Init
+    loadCategories();
     loadResources();
 </script>
 
