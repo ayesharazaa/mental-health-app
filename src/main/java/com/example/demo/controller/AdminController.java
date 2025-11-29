@@ -82,15 +82,16 @@ public class AdminController {
     }
 
     @PatchMapping("/users/{id}/block")
-    public ResponseEntity<User> blockUser(@PathVariable long id, @RequestBody Map<String, Boolean> body) {
-        User user = userRepository.findById(id).orElse(null);
-        if (user != null) {
-            boolean blocked = body.getOrDefault("blocked", true);
-            user.setBlocked(blocked);
-            return ResponseEntity.ok(userRepository.save(user));
-        }
-        return ResponseEntity.notFound().build();
+    public ResponseEntity<?> blockUser(@PathVariable Long id, @RequestBody Map<String, Boolean> payload) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        user.setBlocked(payload.get("blocked")); // save blocked status
+        userRepository.save(user);
+
+        return ResponseEntity.ok(Map.of("message", "User status updated"));
     }
+
 
     @DeleteMapping("/users/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
@@ -141,7 +142,7 @@ public class AdminController {
         Post updatedPost = postService.updatePost(post);
 
         // Send email notification to the user
-        if (post.getUser() != null) {
+        if (post.getUser() != null && post.getUser().getEmail() != null) {
             String subject = "Your post has been flagged on MindTrack";
             String htmlBody = "<p>Hi " + post.getUser().getUsername() + ",</p>"
                     + "<p>Your post with ID <strong>" + post.getId() + "</strong> has been flagged by an admin.</p>"
@@ -163,12 +164,6 @@ public class AdminController {
         String reason = body.getOrDefault("reason", "Removed by admin");
         postService.deletePostAsAdmin(id, adminUser, reason);
         return ResponseEntity.noContent().build();
-    }
-    @PostMapping("/posts/{id}/resolve")
-    public ResponseEntity<Post> resolvePost(@PathVariable Long id) {
-        Post updated = postService.unflagPost(id);
-        if (updated == null) return ResponseEntity.notFound().build();
-        return ResponseEntity.ok(updated);
     }
 
     @GetMapping("/posts")

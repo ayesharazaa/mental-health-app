@@ -93,16 +93,6 @@ public class PostController {
         return ResponseEntity.notFound().build();
     }
 
-//    @PreAuthorize("hasRole('ADMIN')")
-//    @DeleteMapping("/admin/{id}")
-//    public ResponseEntity<Void> adminDeletePost(@PathVariable Long id, @RequestBody Map<String,String> body,
-//                                                @AuthenticationPrincipal User adminUser) {
-//        String reason = body.getOrDefault("reason", "Removed by admin");
-//        postService.deletePostAsAdmin(id, adminUser, reason);
-//        return ResponseEntity.noContent().build();
-//    }
-
-
     @PostMapping("/{id}/flag")
     public ResponseEntity<Void> flagPost(@PathVariable Long id, @RequestBody Map<String, String> body,
                                          @AuthenticationPrincipal User user) {

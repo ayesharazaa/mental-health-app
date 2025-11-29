@@ -22,7 +22,6 @@ public class Post {
 
     @Column(columnDefinition = "TEXT")
     private String content;
-    @Column(nullable = true)
     private boolean anonymous;
 
     private LocalDateTime date;

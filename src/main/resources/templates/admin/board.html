@@ -98,7 +98,14 @@ function renderPosts(posts) {
     }
 
     tbody.innerHTML = posts.map(p => {
-        let createdDate = p.createdAt ? new Date(p.createdAt).toLocaleString() : "";
+        let createdDate = getCreatedAt(p);
+         const flagButton = p.flagged
+            ? `<button class="btn-flag" disabled>Flagged</button>`
+            : `<button class="btn-flag" onclick="flagPost(${p.id})">Flag</button>`;
+
+            const deleteButton = p.deleted
+            ? `<button class="btn-danger deleted" disabled>Deleted</button>`
+            : `<button class="btn-danger" onclick="deletePost(${p.id})">Delete</button>`;
         return `
             <tr>
                 <td>${p.id}</td>
@@ -106,11 +113,9 @@ function renderPosts(posts) {
                 <td>${p.content || ""}</td>
                 <td>${createdDate}</td>
                 <td>
-                    <button class="btn-flag" onclick="flagPost(${p.id})">
-                        ${p.flagged ? "Flagged" : "Flag"}
-                    </button>
-                    <button class="btn-danger" onclick="deletePost(${p.id})">Delete</button>
-                </td>
+                    ${flagButton}
+                    ${deleteButton}
+                </td>K
             </tr>
         `;
     }).join("");
@@ -120,15 +125,16 @@ async function flagPost(id) {
     const reason = prompt("Enter flag reason:");
     if (!reason) return;
 
-    await fetch(`/api/admin/posts/${id}/flag`, {
+    const res = await fetch(`/api/admin/posts/${id}/flag`, {
         method: "PATCH",
+        credentials: "include",
         headers: {
-            "Authorization": "Bearer " + getJwt(),
-            "Content-Type": "application/json"
+             "Content-Type": "application/json"
         },
+
         body: JSON.stringify({ reason })
     });
-
+    if (!res.ok) return alert("Failed to flag post");
     loadPosts();
 }
 
