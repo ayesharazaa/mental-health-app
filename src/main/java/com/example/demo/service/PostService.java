@@ -89,7 +89,7 @@ public class PostService {
     }
 }
 
-    /**
+    /*
      * Admin deletes a post and sends a notification to the post owner with the admin's reason.
      *
      * @param postId id of the post to delete

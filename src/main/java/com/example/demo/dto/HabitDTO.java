@@ -1,15 +1,19 @@
 package com.example.demo.dto;
 
-import java.time.LocalDate;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+import java.time.LocalDate;
+@Getter
+@Setter
+@NoArgsConstructor
 public class HabitDTO {
     private Long id;
     private String habitName;
     private String frequency;
     private LocalDate lastCompletedDate;
     private int currentStreak;
-
-    public HabitDTO() {}
 
     public HabitDTO(Long id, String habitName, String frequency, LocalDate lastCompletedDate, int currentStreak) {
         this.id = id;
@@ -18,15 +22,4 @@ public class HabitDTO {
         this.lastCompletedDate = lastCompletedDate;
         this.currentStreak = currentStreak;
     }
-
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public String getHabitName() { return habitName; }
-    public void setHabitName(String habitName) { this.habitName = habitName; }
-    public String getFrequency() { return frequency; }
-    public void setFrequency(String frequency) { this.frequency = frequency; }
-    public LocalDate getLastCompletedDate() { return lastCompletedDate; }
-    public void setLastCompletedDate(LocalDate lastCompletedDate) { this.lastCompletedDate = lastCompletedDate; }
-    public int getCurrentStreak() { return currentStreak; }
-    public void setCurrentStreak(int currentStreak) { this.currentStreak = currentStreak; }
 }

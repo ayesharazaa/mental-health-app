@@ -120,8 +120,8 @@
                 : `<button class="btn-flag" onclick="flagPost(${p.id})">Flag</button>`;
 
             const deleteButton = p.deleted
-                ? `<button class="btn-danger deleted" disabled>Deleted</button>`
-                : `<button class="btn-danger" onclick="deletePost(${p.id})">Delete</button>`;
+                ? `<button class="btn-danger deleted" disabled>Deleted & Blocked</button>`
+                : `<button class="btn-danger" onclick="deleteAndBlock(${p.id}, ${p.user.id})">Delete & Block</button>`;
             return `
             <tr>
                 <td>${p.id}</td>
@@ -157,25 +157,39 @@
 
 
 
-    // Delete post
-    async function deletePost(id) {
-        const reason = prompt("Enter deletion reason:");
-        if (!reason) return;
+   // Delete post and block user
+async function deleteAndBlock(postID, userId) {
+    const reason = prompt("Enter deletion reason:");
+    if (!reason) return;
 
-        try {
-            const res = await fetch(`/api/admin/posts/${id}`, {
-                method: "DELETE",
-                credentials: "include",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ reason })
-            });
-            if (!res.ok) throw new Error("Failed to delete post");
-            loadPosts();
-        } catch (err) {
-            console.error(err);
-            alert("Error deleting post");
-        }
+    try {
+        // Use postID here
+        const deleteRes = await fetch(`/api/admin/posts/${postID}`, {
+            method: "DELETE",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ reason })
+        });
+        if (!deleteRes.ok) throw new Error("Failed to delete post");
+
+        const blockRes = await fetch(`/api/admin/users/${userId}/block`, {
+            method: "PATCH",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ blocked: true })
+        });
+        if (!blockRes.ok) throw new Error("Failed to block user");
+
+        loadPosts();
+    } catch (err) {
+        console.error(err);
+        alert("Error deleting post and blocking user");
     }
+}
+
+// Initial load
+loadPosts();
+
 
     // Initial load
     loadPosts();

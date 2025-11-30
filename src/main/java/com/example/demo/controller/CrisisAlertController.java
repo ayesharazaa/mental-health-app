@@ -54,14 +54,6 @@ public class CrisisAlertController {
         return ResponseEntity.ok(alert);
     }
 
-//    @PostMapping("/resolve/{id}")
-//    @ResponseBody
-//    public ResponseEntity<CrisisAlert> resolve(@PathVariable Long id) {
-//        CrisisAlert alert = crisisAlertService.resolveAlert(id);
-//        return ResponseEntity.ok(alert);
-//    }
-
-
     @PostMapping("/resolve/{id}")
     @ResponseBody
     public ResponseEntity<?> resolve(@PathVariable Long id) {

@@ -145,7 +145,7 @@ public class AdminController {
         if (post.getUser() != null && post.getUser().getEmail() != null) {
             String subject = "Your post has been flagged on MindTrack";
             String htmlBody = "<p>Hi " + post.getUser().getUsername() + ",</p>"
-                    + "<p>Your post with ID <strong>" + post.getId() + "</strong> has been flagged by an admin.</p>"
+                    + "<p>Your post with ID <strong>" + post.getContent() + "</strong> has been flagged by an admin.</p>"
                     + "<p><strong>Reason:</strong> " + reason + "</p>"
                     + "<p>Regards,<br>MindTrack Admin Team</p>";
 

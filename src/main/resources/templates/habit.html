@@ -88,9 +88,13 @@
                 let isCompleted = false;
 
                 // DAILY FREQUENCY RULE
-                if (habit.frequency === "DAILY" && habit.lastCompletedDate === today) {
-                    isCompleted = true;
+            if (habit.frequency === "DAILY" && habit.lastCompletedDate) {
+                    const last = new Date(habit.lastCompletedDate);
+                    const nextAllowed = new Date(last);
+                    nextAllowed.setDate(nextAllowed.getDate() + 1);
+                    if (nextAllowed > new Date()) isCompleted = true;
                 }
+
 
                 // WEEKLY FREQUENCY RULE
                 if (habit.frequency === "WEEKLY" && habit.lastCompletedDate) {

@@ -6,6 +6,8 @@ import com.itextpdf.text.pdf.PdfPTable;
 import com.itextpdf.text.pdf.PdfWriter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.io.ByteArrayOutputStream;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -138,7 +140,7 @@ public class ExportService {
         document.add(new Paragraph("Completed: " + completed));
         document.add(new Paragraph("Pending: " + pending));
     }
-
+    @Transactional
     public String exportUserDataToCSV(User user, LocalDate startDate, LocalDate endDate) {
         StringBuilder csv = new StringBuilder();
         csv.append("Type,Date,Value,Details\n");

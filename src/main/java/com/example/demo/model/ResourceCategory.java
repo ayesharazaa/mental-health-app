@@ -9,6 +9,7 @@ import lombok.Setter;
 @Table(name = "resource_category")
 @Getter
 @Setter
+@NoArgsConstructor
 public class ResourceCategory {
 
     @Id
@@ -20,8 +21,6 @@ public class ResourceCategory {
 
     public ResourceCategory(String name) {
         this.name = name;
-    }
-    public ResourceCategory() {
     }
     public String getResources()
     {

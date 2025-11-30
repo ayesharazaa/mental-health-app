@@ -70,11 +70,6 @@ public class ViewController {
     public String moodPage() {
         return "mood";
     }
-
-    // @GetMapping("/habit")
-    // public String habitPage() {
-    // return "habit";
-    // }
     @GetMapping("/journal")
     public String journalPage() {
         return "journal";
@@ -105,11 +100,6 @@ public class ViewController {
         return "board";
     }
 
-    // @GetMapping("/resources")
-    // public String resourcesPage() {
-    // return "resources";
-    // }
-
     @GetMapping("/analytics")
     public String analyticsPage() {
         return "analytics";
@@ -130,11 +120,6 @@ public class ViewController {
     public String adminBoard() {
         return "admin/board";
     }
-//
-//    @GetMapping("/admin/crisis")
-//    public String adminCrisis() {
-//        return "admin/crisis";
-//    }
 
     @GetMapping("/admin/reports")
     public String adminReports() {
