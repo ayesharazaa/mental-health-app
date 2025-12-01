@@ -112,5 +112,44 @@ public class AuthController {
             return ResponseEntity.status(401).body(Map.of("error", "Invalid credentials"));
         }
     }
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> body) {
+        try {
+            String email = body.get("email");
+
+            // Always return success message for security (don't reveal if email exists)
+            userRepository.findByEmail(email).ifPresent(user -> {
+                String token = authService.generateResetToken(user);
+                String resetLink = "http://localhost:8080/reset_password?token=" + token;
+                authService.sendResetEmail(user.getEmail(), resetLink);
+            });
+
+            return ResponseEntity.ok(Map.of("message", "If the email exists, a reset link has been sent"));
+        } catch (Exception e) {
+            return ResponseEntity.ok(Map.of("message", "If the email exists, a reset link has been sent"));
+        }
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> body) {
+        try {
+            String token = body.get("token");
+            String password = body.get("password");
+
+            boolean ok = authService.resetPassword(token, password);
+
+            if (!ok) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of("error", "Invalid or expired token"));
+            }
+
+            return ResponseEntity.ok(Map.of("message", "Password successfully reset"));
+
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+
 
 }

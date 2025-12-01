@@ -65,6 +65,16 @@ public class ViewController {
         return "register"; // Points to register.html
     }
 
+    @GetMapping("/forgot_password")
+    public String forgotPassword() {
+        return "forgot_password"; // Points to forgot_password.html
+    }
+
+    @GetMapping("/reset_password")
+    public String resetPassword() {
+        return "reset_password"; // Points to reset_password.html
+    }
+
     // user
     @GetMapping("/mood")
     public String moodPage() {

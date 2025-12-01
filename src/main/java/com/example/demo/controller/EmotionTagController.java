@@ -27,9 +27,14 @@ public class EmotionTagController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<EmotionTag> createTag(@RequestBody EmotionTag tag) {
         try {
+            if (tag.getCategory() == null) {
+                tag.setCategory(EmotionTag.Category.CUSTOM);
+            }
+            if (tag.getColor() == null || tag.getColor().isBlank()) {
+                tag.setColor("#9ca3af");
+            }
             EmotionTag created = emotionTagService.createTag(tag);
             return ResponseEntity.ok(created);
         } catch (IllegalArgumentException e) {

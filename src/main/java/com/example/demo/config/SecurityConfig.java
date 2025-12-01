@@ -37,14 +37,17 @@ public class SecurityConfig {
                                         "/api/auth/**",
                                         "/login",
                                         "/register",
+                                        "/forgot_password",
+                                        "/reset_password",
                                         "/error/**",
                                         "/css/**",
                                         "/js/**",
                                         "/images/**",
-                                        "/uploads/**")
+                                        "/uploads/**",
+                                        "/api/tags/**")
                                 .permitAll()
 
-                                // USER dashboard & APIs
+                                // user dashboard & APIs
                                 .requestMatchers(
                                         "/dashboard",
                                         "/api/moods/**",
@@ -59,11 +62,9 @@ public class SecurityConfig {
                                         "/resources/**")
                                 .hasRole("USER")
 
-                                // ADMIN pages
+                                // admin pages
                                 .requestMatchers("/admin/**").hasRole("ADMIN")
                                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
-
-                                // Everything else requires authentication
                                 .anyRequest().authenticated())
                         .sessionManagement(session -> session
                                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))

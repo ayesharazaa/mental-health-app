@@ -9,6 +9,7 @@ import com.example.demo.repository.HabitRepository;
 import com.example.demo.repository.JournalRepository;
 import com.example.demo.repository.CheckInRepository;
 import com.example.demo.service.NotificationService;
+import com.example.demo.service.AuthService;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -24,19 +25,22 @@ public class ReminderScheduler {
     private final JournalRepository journalRepo;
     private final CheckInRepository checkInRepo;
     private final NotificationService notifier;
+    private final AuthService authService;
 
     public ReminderScheduler(
             UserRepository userRepo,
             HabitRepository habitRepo,
             JournalRepository journalRepo,
             CheckInRepository checkInRepo,
-            NotificationService notifier
+            NotificationService notifier,
+            AuthService authService
     ) {
         this.userRepo = userRepo;
         this.habitRepo = habitRepo;
         this.journalRepo = journalRepo;
         this.checkInRepo = checkInRepo;
         this.notifier = notifier;
+        this.authService = authService;
     }
 
 
@@ -107,5 +111,11 @@ public class ReminderScheduler {
                 );
             }
         }
+    }
+
+    // Clean up expired password reset tokens every hour
+    @Scheduled(cron = "0 0 * * * *")
+    public void cleanupExpiredResetTokens() {
+        authService.cleanupExpiredTokens();
     }
 }

@@ -10,7 +10,6 @@
 
 <body>
 
-<!-- NAVBAR -->
 <nav class="navbar">
     <div class="logo">MindTrack</div>
     <button class="mobile-menu-btn" onclick="toggleSidebar()">
@@ -75,36 +74,36 @@
 
     <main class="main-content">
 
-    <div class="card">
-        <h2 id="formTitle">New Entry</h2>
+        <div class="card">
+            <h2 id="formTitle">New Entry</h2>
 
-        <form id="journalForm">
-            <input type="hidden" id="currentEntryId">
+            <form id="journalForm">
+                <input type="hidden" id="currentEntryId">
 
-            <label>How are you feeling?</label>
-            <div class="emotion-grid" id="emotionGrid"></div>
+                <label>How are you feeling?</label>
+                <div class="emotion-grid" id="emotionGrid"></div>
+                <button type="button" class="btn-secondary" onclick="openAddTagModal()" style="margin-top:0.5rem;">
+                    + Add Custom Emotion
+                </button>
+                <label for="date">Date</label>
+                <input type="date" id="date" required>
 
-            <label for="date">Date</label>
-            <input type="date" id="date" required>
+                <label for="entryText">Your Thoughts</label>
+                <textarea id="entryText" placeholder="What's on your mind?" required></textarea>
 
-            <label for="entryText">Your Thoughts</label>
-            <textarea id="entryText" placeholder="What's on your mind?" required></textarea>
+                <button type="submit" style="margin-top: 1rem;">Save Entry</button>
+                <button type="button" style="margin-top: 1rem; margin-left: 0.5rem;" class="btn-secondary" onclick="cancelEdit()">Cancel</button>
+            </form>
 
-            <button type="submit" style="margin-top: 1rem;">Save Entry</button>
-            <button type="button" style="margin-top: 1rem; margin-left: 0.5rem;" class="btn-secondary" onclick="cancelEdit()">Cancel</button>
-        </form>
+            <button style="margin-top: 1rem; width: 100%;" onclick="openDatePicker()">
+                View Past Entries
+            </button>
+        </div>
 
-        <button style="margin-top: 1rem; width: 100%;" onclick="openDatePicker()">
-            View Past Entries
-        </button>
-    </div>
-
-    <!-- Entry Display Card -->
-    <div id="entryDisplay" class="entry-display"></div>
+        <div id="entryDisplay" class="entry-display"></div>
     </main>
 </div>
 
-<!-- Date Picker Modal -->
 <div class="modal" id="datePickerModal">
     <div class="modal-content date-picker-modal">
         <div class="modal-header">
@@ -122,36 +121,64 @@
         </button>
     </div>
 </div>
+<div class="modal" id="addTagModal">
+    <div class="modal-content small-modal">
+        <div class="modal-header">
+            <h3>Add Emotion Tag</h3>
+            <button class="close-btn" onclick="closeAddTagModal()">×</button>
+        </div>
 
+        <label for="newEmotionName">Emotion Name</label>
+        <input type="text" id="newEmotionName" placeholder="e.g. overwhelmed">
+
+        <button class="btn btn-primary" onclick="saveNewEmotion()" style="width:100%;">
+            Add Emotion
+        </button>
+    </div>
+</div>
 <script>
     function toggleSidebar() {
         document.getElementById('sidebar').classList.toggle('active');
     }
 
     async function loadEmotionTags() {
-        const res = await fetch("/api/tags");
-        const tags = await res.json();
+        try {
+            const res = await fetch("/api/tags");
+            if (!res.ok) {
+                console.error("Failed to fetch emotion tags:", res.status);
+                return;
+            }
+            const tags = await res.json();
 
-        const grid = document.getElementById("emotionGrid");
-        grid.innerHTML = "";
+            const grid = document.getElementById("emotionGrid");
+            grid.innerHTML = "";
 
-        tags.forEach(tag => {
-            const div = document.createElement("label");
-            div.className = "emotion-item";
-            div.innerHTML = `
+            if (!Array.isArray(tags) || tags.length === 0) {
+                grid.innerHTML = '<p style="color: var(--text-muted);">No emotion tags available.</p>';
+                return;
+            }
+
+            tags.forEach(tag => {
+                const div = document.createElement("label");
+                div.className = "emotion-item";
+                div.innerHTML = `
                 <input type="checkbox" value="${tag.name}">
                 <span>${tag.name}</span>
             `;
 
-            div.onclick = () => div.classList.toggle("active");
+                div.onclick = () => div.classList.toggle("active");
 
-            grid.appendChild(div);
-        });
+                grid.appendChild(div);
+            });
+        } catch (error) {
+            console.error("Error loading emotion tags:", error);
+        }
     }
+
 
     document.getElementById("date").valueAsDate = new Date();
 
-    /* Save Entry */
+    // Save Entry
     document.getElementById("journalForm").addEventListener("submit", async (e) => {
         e.preventDefault();
 
@@ -284,6 +311,44 @@
             box.appendChild(entryCard);
         });
     }
+
+    function openAddTagModal() {
+        document.getElementById("addTagModal").style.display = "flex";
+    }
+
+    function closeAddTagModal() {
+        document.getElementById("addTagModal").style.display = "none";
+    }
+
+    async function saveNewEmotion() {
+        const name = document.getElementById("newEmotionName").value.trim();
+
+        if (!name) {
+            alert("Please enter an emotion name.");
+            return;
+        }
+
+        const category = "CUSTOM";
+        const res = await fetch("/api/tags", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: name.trim(), category })
+        });
+
+        console.log("API /api/tags response status:", res.status);
+
+        if (res.ok) {
+            alert("Emotion added!");
+            document.getElementById("newEmotionName").value = "";
+            closeAddTagModal();
+            loadEmotionTags();
+        } else {
+            alert("Failed to add emotion.");
+        }
+    }
+
+    document.getElementById('newEmotionName').value = '';
+    loadEmotionTags();
 
     async function editEntry(entryId) {
         try {

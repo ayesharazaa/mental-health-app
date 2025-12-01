@@ -51,11 +51,9 @@ public class JournalService {
     public List<Journal> getAllJournals() {
         return journalRepository.findAll();
     }
-
     public Journal getJournalById(long id) {
-        return journalRepository.findById(id).orElse(null);
+        return journalRepository.findByIdWithEmotionTags(id).orElse(null);
     }
-
     // User-specific methods
     public List<Journal> getJournalsByUser(User user) {
         return journalRepository.findByUserOrderByDateDesc(user);

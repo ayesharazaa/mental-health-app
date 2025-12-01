@@ -19,6 +19,9 @@ public class UserService {
     }
 
     public User register(User user) throws Exception {
+        if (!user.getEmail().matches("^[a-zA-Z][a-zA-Z0-9._%+-]*@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$")) {
+            throw new Exception("Email must start with a letter and be valid");
+        }
         if (userRepository.existsByUsername(user.getUsername())) {
             throw new Exception("Username already exists");
         }

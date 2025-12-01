@@ -9,6 +9,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -20,6 +21,7 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/admin")
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminController {
+    private final PasswordEncoder encoder;
     private final PostService postService;
     private final UserService userService;
     private final UserRepository userRepository;
@@ -31,7 +33,7 @@ public class AdminController {
     private final HabitRepository habitRepository;
     private final StressRepository stressRepository;
     private final EmailService emailService;
-    public AdminController(PostService postService,
+    public AdminController(PasswordEncoder encoder, PostService postService,
                            UserService userService,
                            UserRepository userRepository,
                            UserActivityService userActivityService,
@@ -41,6 +43,7 @@ public class AdminController {
                            GoalRepository goalRepository,
                            HabitRepository habitRepository,
                            StressRepository stressRepository, EmailService emailService) {
+        this.encoder = encoder;
         this.postService = postService;
         this.userService = userService;
         this.userRepository = userRepository;
@@ -326,5 +329,19 @@ public class AdminController {
     public String flaggedPage() {
         return "admin/flagged";
     }
+    @PostMapping("/reset-user-password")
+    public ResponseEntity<?> adminReset(@RequestBody Map<String, String> req) {
+        Long id = Long.valueOf(req.get("id"));
+        String newPassword = req.get("newPassword");
 
+        User user = userRepository.findById(id).orElse(null);
+        if (user == null) return ResponseEntity.badRequest().body(Map.of("error", "User not found"));
+
+        user.setPassword(encoder.encode(newPassword));
+        userRepository.save(user);
+
+        return ResponseEntity.ok(Map.of("message", "Password reset by admin"));
     }
+
+
+}
